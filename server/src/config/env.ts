@@ -10,9 +10,9 @@ const envSchema = z.object({
     REDIS_URL: z.string(),
     JWT_SECRET: z.string().min(6),
     JWT_EXPIRES_IN: z.string().default('7d'),
-    OPENAI_API_KEY: z.string().startsWith('sk-'),
-    OPENAI_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
-    OPENAI_CHAT_MODEL: z.string().default('gpt-4o-mini'),
+    GEMINI_API_KEY: z.string(),
+    GEMINI_EMBEDDING_MODEL: z.string().default('text-embedding-004'),
+    GEMINI_CHAT_MODEL: z.string().default('gemini-1.5-flash'),
     UPLOAD_DIR: z.string().default('./uploads'),
     MAX_FILE_SIZE_MB: z.string().default('50'),
 })

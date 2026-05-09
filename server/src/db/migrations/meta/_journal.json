@@ -8,6 +8,13 @@
       "when": 1778228068265,
       "tag": "0000_wild_catseye",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778323620459,
+      "tag": "0001_slimy_captain_flint",
+      "breakpoints": true
     }
   ]
 }
