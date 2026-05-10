@@ -15,6 +15,13 @@
       "when": 1778323620459,
       "tag": "0001_slimy_captain_flint",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778404154431,
+      "tag": "0002_charming_clea",
+      "breakpoints": true
     }
   ]
 }

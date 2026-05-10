@@ -5,6 +5,7 @@ import { errorHandler } from './middleware/errorHandler';
 import authRouter from './modules/auth/auth.router';
 import sessionRouter from './modules/sessions/sessions.router'
 import documentsRouter from './modules/documents/documents.router';
+import chatRouter from './modules/chat/chat.router';
 
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use('/api/auth', authRouter);
 app.use('/api/sessions', sessionRouter)
 app.use('/api/sessions/:sessionId/documents', documentsRouter);
+app.use('/api/sessions/:sessionId/chat', chatRouter);
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
