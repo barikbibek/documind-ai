@@ -50,7 +50,7 @@ export const documentChunks = pgTable('document_chunks', {
   documentId: uuid('document_id').notNull().references(() => documents.id, { onDelete: 'cascade' }),
   sessionId: uuid('session_id').notNull().references(() => chatSessions.id, { onDelete: 'cascade' }),
   content: text('content').notNull(),
-  embedding: vector('embedding', 768),  // 768 = text-embedding-3-small dimensions
+  embedding: vector('embedding', 3072),  // 3072 = text-embedding-3-small dimensions
   chunkIndex: integer('chunk_index').notNull(),
   pageNumber: integer('page_number'),
   metadata: jsonb('metadata').default({}),
