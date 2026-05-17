@@ -6,12 +6,16 @@ import authRouter from './modules/auth/auth.router';
 import sessionRouter from './modules/sessions/sessions.router'
 import documentsRouter from './modules/documents/documents.router';
 import chatRouter from './modules/chat/chat.router';
+import { env } from './config/env';
 
 
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+    origin: env.CLIENT_URL,
+    credentials: true,
+}));
 app.use(express.json());
 
 // Routes

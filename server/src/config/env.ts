@@ -15,6 +15,7 @@ const envSchema = z.object({
     GEMINI_CHAT_MODEL: z.string().default('gemini-1.5-flash'),
     UPLOAD_DIR: z.string().default('./uploads'),
     MAX_FILE_SIZE_MB: z.string().default('50'),
+    CLIENT_URL: z.string().default('http://localhost:5173'),
 })
 
 export const env = envSchema.parse(process.env)

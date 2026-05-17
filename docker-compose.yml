@@ -11,11 +11,26 @@ services:
       - '5433:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
-  
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     ports:
       - '6379:6379'
-  
+    restart: unless-stopped
+
+  backend:
+    build: ./server
+    ports:
+      - '4000:4000'
+    env_file:
+      - ./server/.env
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./server/uploads:/app/uploads
+    restart: unless-stopped
+
 volumes:
   pgdata:

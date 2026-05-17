@@ -28,6 +28,10 @@ export async function sendMessage(req: Request, res: Response) {
   // "data: <json>\n\n"  (double newline signals end of event)
   const send = (payload: object) => {
     res.write(`data: ${JSON.stringify(payload)}\n\n`);
+    // Flush immediately so tokens stream through proxies in real-time
+    if (typeof (res as any).flush === 'function') {
+      (res as any).flush();
+    }
   };
 
   try {
