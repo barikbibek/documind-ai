@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { eq } from 'drizzle-orm';
 import { db } from '../../config/db';

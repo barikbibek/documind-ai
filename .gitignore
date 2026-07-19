@@ -7,3 +7,4 @@ server/uploads/*.pdf
 uploads/
 client
 /client
+server/dist

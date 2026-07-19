@@ -12,8 +12,16 @@ import { env } from './config/env';
 const app = express();
 
 app.use(helmet());
+const allowedOrigins = env.CLIENT_URL.split(',').map(o => o.trim());
+
 app.use(cors({
-    origin: env.CLIENT_URL,
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
 }));
 app.use(express.json());
