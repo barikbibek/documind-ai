@@ -94,7 +94,7 @@ jobs:
             git pull origin main
             docker compose build
             docker compose up -d --remove-orphans
-            docker compose exec -T server npm run migrate
+            docker compose exec -T backend npm run migrate
 
             for i in $(seq 1 10); do
               if curl -sf http://localhost:PORT/health > /dev/null; then

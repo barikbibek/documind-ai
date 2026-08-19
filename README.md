@@ -101,7 +101,7 @@ JWT_EXPIRES_IN=7d
 # Google Gemini AI
 GEMINI_API_KEY="AIzaSy..."
 GEMINI_EMBEDDING_MODEL="models/gemini-embedding-001"
-GEMINI_CHAT_MODEL="models/gemini-1.5-flash"
+GEMINI_CHAT_MODEL="models/gemini-2.5-flash"
 
 # Storage
 UPLOAD_DIR="./uploads"
