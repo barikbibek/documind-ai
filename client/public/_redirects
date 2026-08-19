@@ -1,0 +1,2 @@
+/api/*  https://api.10xlab.online/:splat  200
+/*      /index.html                       200

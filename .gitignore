@@ -5,6 +5,5 @@ node_modules
 *.PDF
 server/uploads/*.pdf
 uploads/
-client
-/client
 server/dist
+PROJECT_STATE.md

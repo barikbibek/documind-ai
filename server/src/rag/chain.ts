@@ -65,3 +65,23 @@ export async function* runRAGChain(
 
   yield { type: 'done', data: { fullResponse } };
 }
+
+const titleLlm = new ChatGoogleGenerativeAI({
+  apiKey: env.GEMINI_API_KEY,
+  model: env.GEMINI_CHAT_MODEL,
+  temperature: 0.2,
+  streaming: false,
+});
+
+export async function generateTitle(question: string): Promise<string> {
+  const prompt = ChatPromptTemplate.fromMessages([
+    ['system', "You are a helpful assistant. Generate a short 3-5 word title summarizing the user's message. Do not include quotes or any other text, just the title."],
+    ['human', '{question}'],
+  ]);
+  
+  const chain = prompt.pipe(titleLlm).pipe(new StringOutputParser());
+  const response = await chain.invoke({ question });
+  
+  // Clean up quotes if LLM added them
+  return response.replace(/^"|"$/g, '').trim() || 'New Chat';
+}
