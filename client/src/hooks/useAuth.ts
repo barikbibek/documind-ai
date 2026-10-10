@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
+import { useSessionStore } from '../store/sessionStore';
 
 export function useAuth() {
   const [loading, setLoading] = useState(false);
@@ -14,6 +15,7 @@ export function useAuth() {
     setError('');
     try {
       const res = await authApi.login({ email, password });
+      useSessionStore.getState().resetSessions();
       setAuth(res.data.user, res.data.token);
       navigate('/');
     } catch (err: unknown) {
@@ -28,6 +30,7 @@ export function useAuth() {
     setError('');
     try {
       const res = await authApi.register({ name, email, password });
+      useSessionStore.getState().resetSessions();
       setAuth(res.data.user, res.data.token);
       navigate('/');
     } catch (err: unknown) {
@@ -38,6 +41,7 @@ export function useAuth() {
   };
 
   const logout = () => {
+    useSessionStore.getState().resetSessions();
     clearAuth();
     navigate('/login');
   };

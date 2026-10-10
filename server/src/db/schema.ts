@@ -1,5 +1,5 @@
 import {
-  pgTable, uuid, text, integer,
+  pgTable, uuid, text, integer, index,
   jsonb, timestamp, customType
 } from 'drizzle-orm/pg-core';
 
@@ -30,7 +30,7 @@ export const chatSessions = pgTable('chat_sessions', {
   title: text('title').notNull().default('New Chat'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (table) => [index('chat_sessions_user_updated_idx').on(table.userId, table.updatedAt)]);
 
 export const documents = pgTable('documents', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -43,19 +43,19 @@ export const documents = pgTable('documents', {
   pageCount: integer('page_count'),
   errorMsg: text('error_msg'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-});
+}, (table) => [index('documents_session_created_idx').on(table.sessionId, table.createdAt)]);
 
 export const documentChunks = pgTable('document_chunks', {
   id: uuid('id').primaryKey().defaultRandom(),
   documentId: uuid('document_id').notNull().references(() => documents.id, { onDelete: 'cascade' }),
   sessionId: uuid('session_id').notNull().references(() => chatSessions.id, { onDelete: 'cascade' }),
   content: text('content').notNull(),
-  embedding: vector('embedding', 3072),  // 3072 = text-embedding-3-small dimensions
+  embedding: vector('embedding', 3072),
   chunkIndex: integer('chunk_index').notNull(),
   pageNumber: integer('page_number'),
   metadata: jsonb('metadata').default({}),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-});
+}, (table) => [index('document_chunks_session_idx').on(table.sessionId)]);
 
 export const messages = pgTable('messages', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -64,4 +64,12 @@ export const messages = pgTable('messages', {
   content: text('content').notNull(),
   sources: jsonb('sources').default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-});
+}, (table) => [index('messages_session_created_idx').on(table.sessionId, table.createdAt)]);
+
+// Retained independently of chats and documents so clearing either cannot reset a daily allowance.
+export const usageEvents = pgTable('usage_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  kind: text('kind').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index('usage_events_user_kind_created_idx').on(table.userId, table.kind, table.createdAt)]);

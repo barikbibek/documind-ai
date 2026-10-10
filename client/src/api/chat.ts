@@ -1,5 +1,5 @@
 import { useAuthStore } from '../store/authStore';
-import { apiClient } from './client';
+import { apiClient, handleUnauthorized } from './client';
 import type { SSEEvent, Message } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
@@ -20,7 +20,9 @@ export async function* streamMessage(
   });
 
   if (!response.ok) {
-    throw new Error(`Chat request failed: ${response.status}`);
+    const payload = await response.json().catch(() => null);
+    handleUnauthorized(response.status);
+    throw new Error(payload?.message || `Chat request failed: ${response.status}`);
   }
 
   const reader = response.body!.getReader();

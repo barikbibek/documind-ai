@@ -21,6 +21,9 @@
 - 💬 **Streaming RAG Conversions (SSE)**: Real-time token streaming using Server-Sent Events (SSE) with source attribution before responses.
 - 🏷️ **Dynamic Session Titles**: AI-generated smart conversation titles produced automatically on your first message.
 - 🛡️ **Multi-Tier Rate Limiting**: Built-in security with tiered rate limiting (aggressive limits on authentication, document upload, and LLM inference).
+- 🌗 **Light and dark mode**: Theme preference is saved in the browser and can be switched from the sidebar or sign-in screens.
+- 📎 **Composer PDF upload**: Attach PDFs from the chat input and manage each chat's documents from the header.
+- 📊 **Account usage allowances**: Each account can ask 50 AI questions and upload 10 PDFs per UTC day. The sidebar shows current usage and the local reset time. There is no cap on stored PDFs. Daily counts remain after chats or PDFs are deleted.
 - 🧪 **Comprehensive Automated Testing**: Unit and integration test coverage using **Vitest**, **Supertest**, and **React Testing Library**.
 - 🚀 **Automated CI/CD**: GitHub Actions pipeline for continuous testing, automated Netlify frontend deployments, and native ARM64 Docker deployment to Oracle Cloud Infrastructure (OCI).
 
@@ -128,7 +131,7 @@ Start PostgreSQL (with `pgvector`), Redis, and the backend services in container
 docker compose up --build -d
 
 # Run database migrations
-docker compose exec backend npm run db:migrate
+docker compose run --rm backend npm run db:migrate:prod
 ```
 
 Then, in a separate terminal, run the frontend client:
@@ -189,14 +192,16 @@ npm test
 
 | Method | Endpoint | Description | Rate Limit |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/health` | Server health check | Global (100 req / 15 min) |
+| `GET` | `/health` | Server health check | Global (300 req / IP / 15 min) |
+| `GET` | `/health/ready` | Checks PostgreSQL and Redis availability | Global limit |
 | `POST` | `/api/auth/register` | Register a new user | **Auth Limit** (5 req / 15 min) |
 | `POST` | `/api/auth/login` | Log in and receive JWT | **Auth Limit** (5 req / 15 min) |
+| `GET` | `/api/auth/usage` | Current account usage and daily limits | Global limit |
 | `GET` | `/api/auth/me` | Fetch authenticated user profile | Global |
 | `GET` | `/api/sessions` | List user chat sessions | Global |
 | `POST` | `/api/sessions` | Create a new chat session | Global |
-| `POST` | `/api/sessions/:sessionId/documents/upload` | Upload PDF documents (Multipart) | **Doc Limit** (10 req / hour) |
-| `POST` | `/api/sessions/:sessionId/chat/message` | Send message & stream RAG response | **Chat Limit** (10 req / min) |
+| `POST` | `/api/sessions/:sessionId/documents/upload` | Upload PDF documents (Multipart) | 10 PDFs / user / UTC day; 10 req / user / hour |
+| `POST` | `/api/sessions/:sessionId/chat/message` | Send message & stream RAG response | 50 questions / user / UTC day; 10 req / user / min |
 | `GET` | `/api/sessions/:sessionId/chat/messages` | Retrieve conversation history | Global |
 
 ---
@@ -206,8 +211,10 @@ npm test
 The automated GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) runs on:
 1. **Pull Requests**: Runs tests and build validation for both `client` and `server`.
 2. **Pushes to `main`**:
-   - **Frontend**: Automatically builds and deploys to **Netlify**.
-   - **Backend**: Connects securely via SSH to the **Oracle Cloud A1 ARM64 VM**, triggers a `git pull`, rebuilds native ARM Docker containers, and validates server health.
+   - **Backend first**: Connects via SSH to the **Oracle Cloud A1 ARM64 VM**, runs migrations, rebuilds the Docker container, and checks server readiness.
+   - **Frontend second**: Deploys the tested build to **Netlify** after the backend is ready.
+
+The backend port is bound to `127.0.0.1:4000` on the VM. Nginx must proxy the public API hostname to that port and forward `X-Forwarded-For` using `$proxy_add_x_forwarded_for`. Express trusts that single Nginx hop for network-based rate limits.
 
 ---
 

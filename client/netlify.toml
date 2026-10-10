@@ -1,6 +1,6 @@
 [[redirects]]
   from = "/api/*"
-  to = "https://documind-api.10xlab.online/:splat"
+  to = "https://documind-api.10xlab.online/api/:splat"
   status = 200
   force = true
 

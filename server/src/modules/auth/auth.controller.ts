@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { sendError, sendSuccess } from "../../utils/apiResponse";
 import { getMe, loginUser, registerUser } from "./auth.service";
+import { logger } from '../../utils/logger';
 
 
 
@@ -9,7 +10,9 @@ export async function register(req: Request, res: Response){
         const result = await registerUser(req.body)
         sendSuccess(res, result, 201)
     } catch (err) {
-        sendError(res, (err as Error).message, 400)
+        if ((err as Error).message === 'Email already in use' || (err as { code?: string }).code === '23505') return sendError(res, 'Email already in use', 409)
+        logger.error(err)
+        sendError(res, 'Could not create account', 500)
     }
 }
 
@@ -18,7 +21,8 @@ export async function login(req: Request, res: Response){
         const result = await loginUser(req.body)
         sendSuccess(res, result)
     } catch (err) {
-        sendError(res, (err as Error).message, 401)
+        if ((err as Error).message !== 'Invalid credentials') logger.error(err)
+        sendError(res, 'Invalid credentials', 401)
     }
 }
 

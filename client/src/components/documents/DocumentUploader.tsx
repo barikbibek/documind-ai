@@ -6,22 +6,33 @@ import { documentsApi } from '../../api/documents';
 import type { Document } from '../../types';
 
 interface Props {
-  sessionId: string;
-  onUploaded: (docs: Document[]) => void;
+  sessionId?: string;
+  onCreateSession?: () => Promise<string>;
+  onUploaded: (docs: Document[], sessionId: string) => void;
 }
 
-export function DocumentUploader({ sessionId, onUploaded }: Props) {
+export function DocumentUploader({ sessionId, onCreateSession, onUploaded }: Props) {
   const [uploading, setUploading] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const [error, setError] = useState('');
+  const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
 
   const onDrop = useCallback((accepted: File[]) => {
-    setFiles((prev) => [...prev, ...accepted]);
-  }, []);
+    setError('');
+    if (files.length + accepted.length > 10) {
+      setError('Upload up to 10 PDFs at a time.');
+      return;
+    }
+    setFiles([...files, ...accepted]);
+  }, [files]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { 'application/pdf': ['.pdf'] },
     maxFiles: 10,
+    maxSize: 50 * 1024 * 1024,
+    disabled: uploading,
+    onDropRejected: () => setError('Choose up to 10 PDFs, each 50 MB or smaller.'),
   });
 
   const removeFile = (index: number) => {
@@ -32,11 +43,15 @@ export function DocumentUploader({ sessionId, onUploaded }: Props) {
     if (!files.length) return;
     setUploading(true);
     try {
-      const res = await documentsApi.upload(sessionId, files);
-      onUploaded(res.data);
+      const id = sessionId ?? createdSessionId ?? await onCreateSession?.();
+      if (!id) throw new Error('Could not start a chat. Please try again.');
+      if (!sessionId) setCreatedSessionId(id);
+      const res = await documentsApi.upload(id, files);
+      onUploaded(res.data, id);
+      window.dispatchEvent(new Event('usage-updated'));
       setFiles([]);
     } catch (err) {
-      console.error(err);
+      setError((err as Error).message);
     } finally {
       setUploading(false);
     }
@@ -48,21 +63,22 @@ export function DocumentUploader({ sessionId, onUploaded }: Props) {
       <div
         {...getRootProps()}
         className={clsx(
-          'border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors',
+          'border-2 border-dashed rounded-xl px-3 py-4 text-center cursor-pointer transition-colors',
           isDragActive
             ? 'border-brand-500 bg-brand-500/10'
             : 'border-gray-700 hover:border-gray-600 hover:bg-gray-800/50'
         )}
       >
         <input {...getInputProps()} />
-        <Upload className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+        <Upload className="w-5 h-5 text-gray-500 mx-auto mb-1" />
         <p className="text-sm text-gray-400">
-          {isDragActive ? 'Drop PDFs here' : 'Drag & drop PDFs or click to browse'}
+          {isDragActive ? 'Drop PDFs here' : 'Choose PDFs or drop them here'}
         </p>
-        <p className="text-xs text-gray-600 mt-1">Up to 10 files, 50MB each</p>
+        <p className="text-xs text-gray-600 mt-1">Up to 10 PDFs · 50 MB each</p>
       </div>
 
       {/* Selected files */}
+      {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
       {files.length > 0 && (
         <div className="flex flex-col gap-2">
           {files.map((file, i) => (
@@ -77,7 +93,9 @@ export function DocumentUploader({ sessionId, onUploaded }: Props) {
               </span>
               <button
                 onClick={() => removeFile(i)}
+                disabled={uploading}
                 className="text-gray-500 hover:text-red-400"
+                aria-label={`Remove ${file.name}`}
               >
                 <X className="w-4 h-4" />
               </button>

@@ -18,6 +18,7 @@ export interface Document {
   fileSize: number;
   status: 'pending' | 'processing' | 'ready' | 'failed';
   pageCount: number | null;
+  errorMsg?: string | null;
   createdAt: string;
 }
 

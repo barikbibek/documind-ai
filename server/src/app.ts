@@ -8,9 +8,14 @@ import sessionRouter from './modules/sessions/sessions.router'
 import documentsRouter from './modules/documents/documents.router';
 import chatRouter from './modules/chat/chat.router';
 import { env } from './config/env';
+import { db } from './config/db';
+import { redis } from './config/redis';
+import { sql } from 'drizzle-orm';
 
 
 const app = express();
+// Nginx is the only service that can reach the private backend port.
+app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(globalLimiter);
@@ -35,6 +40,15 @@ app.use('/api/sessions/:sessionId/documents', documentsRouter);
 app.use('/api/sessions/:sessionId/chat', chatRouter);
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
+app.get('/health/ready', async (_, res) => {
+    if (redis.status !== 'ready') return res.status(503).json({ status: 'unavailable' });
+    try {
+        await db.execute(sql`select 1`);
+        res.json({ status: 'ok' });
+    } catch {
+        res.status(503).json({ status: 'unavailable' });
+    }
+});
 
 app.use(errorHandler);
 

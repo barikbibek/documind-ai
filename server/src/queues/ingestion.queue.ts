@@ -11,6 +11,8 @@ export const ingestionQueue = new Queue('pdf-ingestion', {
     connection: redis,
     defaultJobOptions: {
         attempts: 3,
+        removeOnComplete: 100,
+        removeOnFail: 500,
         backoff: {
             type: 'exponential',
             delay: 2000,

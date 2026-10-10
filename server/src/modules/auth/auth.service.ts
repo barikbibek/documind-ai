@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '../../config/db';
 import { users } from '../../db/schema';
 import { env } from '../../config/env';
@@ -8,7 +8,7 @@ import type { RegisterInput, LoginInput } from './auth.schema';
 
 export async function registerUser(input: RegisterInput){
     const { name, email, password } = input;
-    const existing = await db.select().from(users).where(eq(users.email, email))
+    const existing = await db.select({ id: users.id }).from(users).where(sql`lower(${users.email}) = ${email}`).limit(1)
     if(existing.length > 0){
         throw new Error('Email already in use')
     }
@@ -33,9 +33,9 @@ export async function registerUser(input: RegisterInput){
 
 export async function loginUser(input: LoginInput){
     const { email, password } = input;
-    const [user] = await db.select().from(users).where(eq(users.email, email))
+    const [user] = await db.select().from(users).where(sql`lower(${users.email}) = ${email}`).limit(1)
 
-    if(!user) throw new Error("User not found ")
+    if(!user) throw new Error('Invalid credentials')
     
     const passwordMatch = await bcrypt.compare(password, user.password)
     if(!passwordMatch) throw new Error("Invalid credentials")

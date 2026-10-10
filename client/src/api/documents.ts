@@ -1,5 +1,6 @@
 import { useAuthStore } from '../store/authStore';
 import type { Document } from '../types';
+import { apiClient, handleUnauthorized } from './client';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -17,20 +18,20 @@ export const documentsApi = {
       body: formData,
     });
 
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message || 'Upload failed');
+    const json = await res.json().catch(() => null);
+    if (!res.ok) {
+      handleUnauthorized(res.status);
+      throw new Error(json?.message || `Upload failed (${res.status})`);
+    }
+    if (!json) throw new Error('The server returned an invalid upload response.');
     return json as { data: Document[] };
   },
 
   list: (sessionId: string) =>
-    import('./client').then(({ apiClient }) =>
-      apiClient<{ data: Document[] }>(`/sessions/${sessionId}/documents`)
-    ),
+    apiClient<{ data: Document[] }>(`/sessions/${sessionId}/documents`),
 
   delete: (sessionId: string, docId: string) =>
-    import('./client').then(({ apiClient }) =>
-      apiClient<{ data: unknown }>(`/sessions/${sessionId}/documents/${docId}`, {
-        method: 'DELETE',
-      })
-    ),
+    apiClient<{ data: unknown }>(`/sessions/${sessionId}/documents/${docId}`, {
+      method: 'DELETE',
+    }),
 };

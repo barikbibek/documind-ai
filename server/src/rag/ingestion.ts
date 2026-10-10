@@ -2,17 +2,23 @@ import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { geminiEmbeddings  } from './embeddings';
 import { db } from '../config/db';
-import { documentChunks } from '../db/schema';
+import { documentChunks, documents } from '../db/schema';
 import { logger } from '../utils/logger';
+import { eq } from 'drizzle-orm';
 
 
 export async function ingestDocument(documentId: string, filePath: string, sessionId: string){
+    // A failed batch may leave chunks behind. Clear them before a BullMQ retry.
+    await db.delete(documentChunks).where(eq(documentChunks.documentId, documentId));
     // ─── STEP 1: LOAD PDF ───────────────────────────────────────────────────
     // PDFLoader reads the file and returns LangChain Document objects.
     // splitPages: true means each page becomes its own Document.
     // This preserves page number metadata which we store and show as citations.
     const loader = new PDFLoader(filePath, { splitPages: true });
     const rawDocs = await loader.load();
+    if (rawDocs.length === 0) throw new Error('This PDF has no extractable text.');
+    const pageCount = Number(rawDocs[0].metadata?.pdf?.totalPages ?? rawDocs.length);
+    await db.update(documents).set({ pageCount }).where(eq(documents.id, documentId));
     logger.info(`Loaded ${rawDocs.length} pages from PDF`);
 
     // ─── STEP 2: CHUNK THE TEXT ─────────────────────────────────────────────
@@ -36,7 +42,7 @@ export async function ingestDocument(documentId: string, filePath: string, sessi
     logger.info(`Split into ${chunks.length} chunks`);
 
     // ─── STEP 3: EMBED + STORE IN BATCHES ───────────────────────────────────
-    // We batch because OpenAI has rate limits.
+    // We batch embedding requests to limit memory and provider load.
     // Each batch: extract text → get embeddings → insert into pgvector.
     //
     // We do this in one loop so we never hold all embeddings in memory at once.
@@ -47,17 +53,17 @@ export async function ingestDocument(documentId: string, filePath: string, sessi
         const batch = chunks.slice(i, i + BATCH_SIZE);
         const texts = batch.map((c: any) => c.pageContent);
 
-        // embedDocuments returns number[][] — one number[768] per text
+        // embedDocuments returns one vector per text.
         const embeddings = await geminiEmbeddings.embedDocuments(texts);
         await db.insert(documentChunks).values(
         batch.map((chunk: any, idx: any) => ({
             documentId,
             sessionId,
             content: chunk.pageContent,
-            embedding: embeddings[idx], // number[] → stored as vector(1536)
+            embedding: embeddings[idx],
             chunkIndex: i + idx,
-            // PDFLoader stores page number in metadata.loc.pageNumber (0-indexed)
-            pageNumber: Number(chunk.metadata?.loc?.pageNumber ?? 0) + 1,
+            // PDFLoader already reports 1-based PDF page numbers.
+            pageNumber: Number(chunk.metadata?.loc?.pageNumber ?? 1),
             metadata: chunk.metadata,
         }))
         );

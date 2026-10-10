@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen } from 'lucide-react';
+import { Brand } from '../components/ui/Brand';
+import { useTheme } from '../hooks/useTheme';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { useAuth } from '../hooks/useAuth';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 
 export function RegisterPage() {
+  const { theme, toggleTheme } = useTheme();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,12 +21,10 @@ export function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 p-4">
+      <ThemeToggle theme={theme} onToggle={toggleTheme} />
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold text-white">DocuMind</span>
+          <Brand />
         </div>
 
         <div className="bg-gray-900 rounded-2xl border border-gray-800 p-6">
@@ -49,7 +50,8 @@ export function RegisterPage() {
             <Input
               label="Password"
               type="password"
-              placeholder="Min. 6 characters"
+              placeholder="At least 8 characters"
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required

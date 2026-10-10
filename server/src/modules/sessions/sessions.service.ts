@@ -1,7 +1,10 @@
-import { eq, and } from "drizzle-orm"
+import { eq, and, desc } from "drizzle-orm"
 import { db } from "../../config/db"
 import { chatSessions, documents } from "../../db/schema"
 import type { CreateSessionInput, UpdateSessionInput } from "./sessions.schema"
+import { unlink } from 'node:fs/promises'
+import path from 'node:path'
+import { env } from '../../config/env'
 
 export async function createSession(userId: string, input: CreateSessionInput){
     const [session] = await db.insert(chatSessions).values({
@@ -13,7 +16,7 @@ export async function createSession(userId: string, input: CreateSessionInput){
 }
 
 export async function getUserSessions(userId: string){
-    return await db.select().from(chatSessions).where(eq(chatSessions.userId, userId))
+    return await db.select().from(chatSessions).where(eq(chatSessions.userId, userId)).orderBy(desc(chatSessions.updatedAt))
 }
 
 export async function getSessionById(sessionId: string, userId: string){
@@ -45,6 +48,9 @@ export async function updateSession(sessionId: string, userId: string, input: Up
 }
 
 export async function deleteSession(sessionId: string, userId: string){
+    const files = await db.select({ filename: documents.filename }).from(documents).where(and(
+        eq(documents.sessionId, sessionId), eq(documents.userId, userId)
+    ))
     const [deleted] = await db.delete(chatSessions).where(
         and(
             eq(chatSessions.id, sessionId),
@@ -53,5 +59,6 @@ export async function deleteSession(sessionId: string, userId: string){
     ).returning()
 
     if(!deleted) throw new Error("Session not found")
+    await Promise.allSettled(files.map(file => unlink(path.join(env.UPLOAD_DIR, file.filename))))
     return deleted
 }

@@ -23,6 +23,9 @@ jobs:
       - name: Run tests
         working-directory: ./client
         run: npm run test
+      - name: Lint client
+        working-directory: ./client
+        run: npm run lint
       - name: Build client
         working-directory: ./client
         run: npm run build
@@ -48,9 +51,15 @@ jobs:
       - name: Run tests
         working-directory: ./server
         run: npm run test
+      - name: Typecheck server
+        working-directory: ./server
+        run: npx tsc --noEmit
+      - name: Build server
+        working-directory: ./server
+        run: npm run build
 
   deploy-client:
-    needs: client-test-build
+    needs: [client-test-build, deploy-server]
     runs-on: ubuntu-latest
     # Only run deployment on push to main (not on PRs)
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -93,11 +102,12 @@ jobs:
 
             git pull origin main
             docker compose build
-            docker compose up -d --remove-orphans
-            docker compose exec -T backend npm run db:migrate:prod
+            docker compose up -d postgres redis
+            docker compose run --rm backend npm run db:migrate:prod
+            docker compose up -d --remove-orphans backend
 
             for i in $(seq 1 20); do
-              if curl -sf http://localhost:4000/health > /dev/null; then
+              if curl --max-time 5 -sf http://localhost:4000/health/ready > /dev/null; then
                 echo "Health check passed"
                 break
               fi

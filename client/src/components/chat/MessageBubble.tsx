@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { clsx } from 'clsx';
-import { BookOpen } from 'lucide-react';
+import { FileStack, FileText } from 'lucide-react';
 import type { Message } from '../../types';
+import { useAuthStore } from '../../store/authStore';
 
 interface Props {
   message: Message;
@@ -10,6 +11,7 @@ interface Props {
 
 export function MessageBubble({ message }: Props) {
   const isUser = message.role === 'user';
+  const userInitial = useAuthStore(state => state.user?.name?.charAt(0).toUpperCase() || 'U');
 
   // Deduplicate sources by sourceFile + pageNumber combination, keep only top 3
   const uniqueSources = useMemo(() => {
@@ -30,22 +32,22 @@ export function MessageBubble({ message }: Props) {
   }, [message.sources]);
 
   return (
-    <div className={clsx('flex gap-2 sm:gap-3', isUser && 'flex-row-reverse')}>
+    <div className={clsx('flex gap-2 sm:gap-3 w-full', isUser && 'flex-row-reverse')}>
       {/* Avatar */}
       <div className={clsx(
         'w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold',
         isUser ? 'bg-brand-600 text-white' : 'bg-gray-700 text-gray-300'
       )}>
-        {isUser ? 'U' : <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+        {isUser ? userInitial : <FileStack className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
       </div>
 
       <div className={clsx(
         'flex flex-col gap-2',
-        isUser ? 'items-end max-w-[85%] sm:max-w-[70%] md:max-w-[60%]' : 'max-w-[85%] sm:max-w-[75%] md:max-w-[70%]'
+        isUser ? 'items-end max-w-[85%] sm:max-w-[70%]' : 'flex-1 min-w-0'
       )}>
         {/* Message content */}
         <div className={clsx(
-          'rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm leading-relaxed',
+          'rounded-2xl max-w-full min-w-0 px-3 sm:px-4 py-2.5 sm:py-3 text-[15px] leading-7 break-words [overflow-wrap:anywhere]',
           isUser
             ? 'bg-brand-600 text-white rounded-tr-sm'
             : 'bg-gray-800 text-gray-100 rounded-tl-sm'
@@ -61,8 +63,10 @@ export function MessageBubble({ message }: Props) {
                     {children}
                   </code>
                 ),
-                ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+                pre: ({ children }) => <pre className="overflow-x-auto rounded-lg bg-gray-900 p-3 mb-3 text-sm leading-6">{children}</pre>,
+                table: ({ children }) => <div className="max-w-full overflow-x-auto mb-3"><table className="min-w-full text-sm">{children}</table></div>,
+                ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
                 strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
               }}
             >
@@ -80,12 +84,9 @@ export function MessageBubble({ message }: Props) {
                 className="flex items-center gap-1 bg-gray-900 border border-gray-700 rounded-full px-2 sm:px-2.5 py-0.5 sm:py-1 text-xs text-gray-400"
                 title={source.content}
               >
-                <BookOpen className="w-3 h-3 text-brand-500 shrink-0" />
+                <FileText className="w-3 h-3 text-brand-500 shrink-0" />
                 <span className="truncate max-w-[120px] sm:max-w-[160px]">{source.sourceFile}</span>
                 {source.pageNumber && <span className="shrink-0">· p.{source.pageNumber}</span>}
-                <span className="text-gray-600 shrink-0">
-                  {Math.round(source.similarity * 100)}%
-                </span>
               </div>
             ))}
           </div>

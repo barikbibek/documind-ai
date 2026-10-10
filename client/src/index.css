@@ -18,6 +18,33 @@
   }
 }
 
+/* The existing dark palette remains the default; these map its surfaces and text to light mode. */
+.theme-light body, .theme-light .bg-gray-950 { background-color: #f7f8fb; }
+.theme-light .bg-gray-900 { background-color: #ffffff; }
+.theme-light .bg-gray-800 { background-color: #eef1f6; }
+.theme-light .bg-gray-700 { background-color: #e2e8f0; }
+.theme-light .bg-gray-800\/50 { background-color: rgb(238 241 246 / .5); }
+.theme-light .text-white, .theme-light .text-gray-100 { color: #172033; }
+.theme-light .text-gray-300 { color: #334155; }
+.theme-light .text-gray-400 { color: #475569; }
+.theme-light .text-gray-500, .theme-light .text-gray-600 { color: #64748b; }
+.theme-light .border-gray-800, .theme-light .border-gray-700 { border-color: #dbe2eb; }
+.theme-light .hover\:bg-gray-800:hover { background-color: #e2e8f0; }
+.theme-light .hover\:text-white:hover { color: #172033; }
+.theme-light .bg-brand-600.text-white,
+.theme-light .bg-brand-700.text-white,
+.theme-light .bg-red-600.text-white { color: #ffffff; }
+.theme-light .bg-brand-600 .text-white,
+.theme-light .bg-brand-700 .text-white { color: #ffffff; }
+.theme-light .placeholder-gray-500::placeholder { color: #94a3b8; }
+.theme-light .scrollbar-thin { scrollbar-color: #cbd5e1 transparent; }
+.theme-light .bg-red-950 { background-color: #fef2f2; }
+.theme-light .border-red-800 { border-color: #fecaca; }
+.theme-light .text-red-300, .theme-light .text-red-400 { color: #b91c1c; }
+.theme-light .text-brand-500, .theme-light .text-brand-400 { color: #0369a1; }
+
+:focus-visible { outline: 2px solid #0ea5e9; outline-offset: 2px; }
+
 /* WhatsApp-style typing indicator dots */
 .typing-dot {
   display: inline-block;

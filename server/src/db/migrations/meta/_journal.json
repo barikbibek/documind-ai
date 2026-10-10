@@ -22,6 +22,27 @@
       "when": 1778404154431,
       "tag": "0002_charming_clea",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791616973815,
+      "tag": "0003_previous_malcolm_colcord",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791617299442,
+      "tag": "0004_daily_mephistopheles",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791619745677,
+      "tag": "0005_boring_liz_osborn",
+      "breakpoints": true
     }
   ]
 }

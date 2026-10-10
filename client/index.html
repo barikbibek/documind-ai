@@ -5,7 +5,17 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Documind</title>
+  <script>
+    try {
+      const savedTheme = localStorage.getItem('documind-theme');
+      if (savedTheme === 'light' || (!savedTheme && matchMedia('(prefers-color-scheme: light)').matches)) {
+        document.documentElement.classList.add('theme-light');
+        document.documentElement.style.colorScheme = 'light';
+      }
+    } catch { /* browser storage may be unavailable */ }
+  </script>
+  <meta name="theme-color" content="#0284c7" />
+  <title>DocuMind · Chat with your PDFs</title>
 </head>
 
 <body>

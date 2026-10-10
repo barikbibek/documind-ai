@@ -1,14 +1,30 @@
 import type { Request, Response } from 'express';
 import { runRAGChain, generateTitle } from '../../rag/chain';
-import { getChatHistory, saveMessage, clearChatHistory } from './chat.service';
+import { getChatHistory, getRecentChatHistory, assertSessionOwnership, saveMessage, clearChatHistory, hasReadyDocuments } from './chat.service';
 import { sendSuccess, sendError } from '../../utils/apiResponse';
 import { logger } from '../../utils/logger';
 import { updateSession } from '../sessions/sessions.service';
+import { reserveUsage, UsageLimitError } from '../usage/usage.service';
 
 export async function sendMessage(req: Request, res: Response) {
-  const { sessionId } = req.params;
+  const sessionId = req.params.sessionId as string;
   const { question } = req.body;
   const userId = req.user!.userId;
+
+  // Check ownership and reserve the daily question before opening the stream.
+  try {
+    await assertSessionOwnership(sessionId, userId);
+    if (!await hasReadyDocuments(sessionId)) {
+      sendError(res, 'Upload a PDF and wait for it to finish processing before asking a question.', 409);
+      return;
+    }
+    await reserveUsage(userId, 'question');
+  } catch (err) {
+    const status = err instanceof UsageLimitError ? 429 : (err as Error).message === 'Session not found' ? 404 : 500;
+    if (status === 500) logger.error(err);
+    sendError(res, status === 500 ? 'Could not start the response. Please try again.' : (err as Error).message, status);
+    return;
+  }
 
   // ─── SSE SETUP ────────────────────────────────────────────────────────────
   // SSE (Server-Sent Events) is a one-way channel: server → browser.
@@ -22,7 +38,7 @@ export async function sendMessage(req: Request, res: Response) {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders(); // send headers immediately, don't wait for body
 
   // Helper to write an SSE event — format is strictly:
@@ -39,7 +55,7 @@ export async function sendMessage(req: Request, res: Response) {
     // ─── FETCH CHAT HISTORY ─────────────────────────────────────────────────
     // We pass last 10 messages as context so Gemini can handle follow-ups.
     // "What did you mean by that?" only works if the LLM sees prior messages.
-    const history = await getChatHistory(sessionId, userId);
+    const history = await getRecentChatHistory(sessionId as string);
     
     // If this is the first message, kick off title generation in parallel
     let titlePromise: Promise<void> | null = null;
@@ -52,7 +68,7 @@ export async function sendMessage(req: Request, res: Response) {
       }) as Promise<void>;
     }
 
-    const recentHistory = history.slice(-10).map(m => ({
+    const recentHistory = history.map(m => ({
       role: m.role,
       content: m.content as string,
     }));
@@ -107,7 +123,9 @@ export async function getMessages(req: Request, res: Response) {
     const history = await getChatHistory(req.params.sessionId, req.user!.userId);
     sendSuccess(res, history);
   } catch (err) {
-    sendError(res, (err as Error).message, 404);
+    if ((err as Error).message === 'Session not found') return sendError(res, 'Session not found', 404);
+    logger.error(err);
+    sendError(res, 'Could not load chat history', 500);
   }
 }
 
@@ -116,6 +134,8 @@ export async function clearMessages(req: Request, res: Response) {
     const result = await clearChatHistory((req.params.sessionId as any), req.user!.userId);
     sendSuccess(res, result);
   } catch (err) {
-    sendError(res, (err as Error).message, 404);
+    if ((err as Error).message === 'Session not found') return sendError(res, 'Session not found', 404);
+    logger.error(err);
+    sendError(res, 'Could not clear chat history', 500);
   }
 }

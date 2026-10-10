@@ -10,8 +10,6 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
 
 async function main() {
-  console.log('Connecting to:', env.DATABASE_URL!); // debug line
-
   const pool = new Pool({
     connectionString: env.DATABASE_URL!
   });

@@ -1,6 +1,7 @@
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
+import { AIMessage, HumanMessage } from '@langchain/core/messages';
 import { retrieveRelevantChunks, type RetrievedChunk } from './retriever';
 import { SYSTEM_PROMPT } from './prompts';
 import { env } from '../config/env';
@@ -44,10 +45,7 @@ export async function* runRAGChain(
   // "What did you mean by that?" only makes sense with history.
   const prompt = ChatPromptTemplate.fromMessages([
     ['system', SYSTEM_PROMPT],
-    ...chatHistory.map(m => [
-      m.role === 'user' ? 'human' : 'assistant',
-      m.content
-    ] as ['human' | 'assistant', string]),
+    ...chatHistory.map(m => m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)),
     ['human', '{question}'],
   ]);
 
